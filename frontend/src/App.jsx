@@ -1,53 +1,56 @@
 import Navbar from "./components/navbar";
-import HomePage from "./pages/HomePage"
-import LoginPage from "./pages/LoginPage"
-import ProfilePage from "./pages/ProfilePage"
-import SettingsPage from "./pages/SettingsPage"
-import SignUpPage from "./pages/SignUpPage"
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
+import SignUpPage from "./pages/SignUpPage";
 
-import {Routes, Route, Navigate} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { usersThemeStore } from "./store/usersThemeStore";
-import { useEffect } from "react";
-import {Loader} from 'lucide-react'
-import {Toaster} from "react-hot-toast"
+import { useEffect, useRef } from "react";
+import { Loader } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
 function App() {
-  const {authUser, checkAuth, isCheckingAuth} = useAuthStore();
-  const theme = usersThemeStore(state => state.theme);
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const theme = usersThemeStore((state) => state.theme);
+  const rootRef = useRef(null);
 
-  useEffect(() =>{
+  useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
-    console.log("Theme applied:", theme);
+    if (rootRef.current) {
+      rootRef.current.setAttribute("data-theme", theme);
+      console.log("Theme applied:", theme);
+    }
   }, [theme]);
 
-  console.log(authUser)
+  console.log(authUser);
 
-  if(isCheckingAuth && !authUser)
-    return(
+  if (isCheckingAuth && !authUser)
+    return (
       <div className="flex items-center justify-center h-screen">
         <Loader className="size-10 animate-spin" />
       </div>
-  )
+    );
   return (
-    <div>
-      <Navbar/>
-      
+    <div ref={rootRef}>
+      <Navbar />
+
       <Routes>
-        <Route path="/" element={authUser ? <HomePage/> : <Navigate to="/login" />}/>
-        <Route path="/signup" element={!authUser ? <SignUpPage/> : <Navigate to="/"/>}/>
-        <Route path="/login" element={!authUser ? <LoginPage/> : <Navigate to="/"/>}/>
-        <Route path="/settings" element={<SettingsPage/>}/>
-        <Route path="/profile" element={authUser ? <ProfilePage/> : <Navigate to="/login"/>}/>
+        <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
+        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
+        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
 
-      <Toaster/>
+      <Toaster />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

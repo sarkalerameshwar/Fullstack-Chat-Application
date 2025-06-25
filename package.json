@@ -8,7 +8,7 @@
     "start": "npm run start --prefix backend "
   },
   "keywords": [],
-  "author": "",
+  "author": "Rameshwar",
   "license": "ISC",
   "type": "commonjs"
 }
