@@ -20,9 +20,10 @@
     "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "jws": "^4.0.0",
-    "mongodb": "^6.17.0",
-    "mongoose": "^8.15.1",
+    "mongodb": "^6.21.0",
+    "mongoose": "^8.23.0",
     "multer": "^2.0.1",
+    "nodemailer": "^8.0.1",
     "safe-buffer": "^5.2.1",
     "socket.io": "^4.8.1"
   }

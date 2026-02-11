@@ -1,12 +1,17 @@
 import express from 'express'
 import { login, logout, signup, updateProfile, authCheck } from '../controllers/auth.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
+import { generateOTP, verifyOTP } from '../controllers/otp.controller.js';
 
 const router = express.Router();
 
 router.post("/signup", signup)
 
 router.post("/login", login)
+
+router.post("/generate-otp", generateOTP)
+
+router.post("/verify-otp", verifyOTP)
 
 router.post("/logout", logout)
 

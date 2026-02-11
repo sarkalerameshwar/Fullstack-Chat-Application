@@ -11,6 +11,7 @@ const SignUpPage = () => {
     username: "",
     email: "",
     password: "",
+    
   });
 
   const { signup, isSigningUp } = useAuthStore();
