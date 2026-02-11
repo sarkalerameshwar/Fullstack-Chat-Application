@@ -62,3 +62,28 @@ export const verifyOTP = async (req, res) => {
     });
   }
 };
+
+
+// export const verifyOTPForPasswordReset = async (email, otp) => {
+//     try {
+//         const otpRecord = await OTP.findOne({ email });
+
+//         if (!otpRecord) {
+//             return { success: false, message: "Invalid OTP or OTP expired" };
+//         }
+//         if (otpRecord.attempts >= 5) {
+//             return { success: false, message: "OTP verification attempts exceeded. Please request new OTP." };
+//         }
+//         if (otpRecord.otp !== otp) {
+//             otpRecord.attempts += 1;
+//             await otpRecord.save();
+//             return { success: false, message: "Invalid OTP" };
+//         }
+//         await OTP.deleteOne({ email });
+//         return { success: true, message: "OTP verified successfully" };
+//     } catch (error) {
+//         console.log("error in verifyOTPForPasswordReset controller", error.message);
+//         return { success: false, message: "Error verifying OTP" };
+//     }
+// }
+

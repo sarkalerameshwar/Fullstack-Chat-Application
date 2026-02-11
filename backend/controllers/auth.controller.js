@@ -115,6 +115,68 @@ export const logout = async (req, res) => {
   }
 };
 
+export const forgotPassword = async (req, res) =>{
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if(!user){
+      return res.status(400).json({
+        message: "User with this email does not exist",
+      });
+    }
+    const otp = generateOTP();
+
+    await OTP.deleteMany({ email });
+
+    await OTP.create({ email, otp });
+
+    await sendEmail(email, "Your OTP Code for Password Reset", `Your OTP code is: ${otp}`);
+
+    res.status(200).json({
+      message: "OTP sent to your email for password reset.",
+    });
+
+  } catch (err) {
+    console.log("error in forgotPassword controller", err.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const resetPassword = async (req, res) =>{
+  try {
+    const { email, otp, newPassword } = req.body;
+    const otpRecord = await OTP.findOne({ email });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        message: "Invalid OTP or OTP expired",
+      });
+    }
+
+    if (otpRecord.otp !== otp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    await OTP.deleteMany({ email });
+
+    res.status(200).json({
+      message: "Password reset successful",
+    });
+
+  } catch (err) {
+    console.log("error in resetPassword controller", err.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 export const updateProfile = async (req, res) => {
   try {
 
