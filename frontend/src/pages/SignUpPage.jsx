@@ -1,35 +1,60 @@
 import { User, Mail, Lock, Eye, EyeOff, Loader2, MessageSquare } from "lucide-react";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // FIXED: Added useNavigate
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
+import OTPModal from "../components/OTPModal"; // FIXED: Import the OTP modal
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false); // NEW: State for OTP modal visibility
+  const [pendingEmail, setPendingEmail] = useState(""); // NEW: Store email for OTP verification
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
-    
   });
 
-  const { signup, isSigningUp } = useAuthStore();
+  const navigate = useNavigate(); // NEW: For navigation after verification
+  const { signup, isSigningUp } = useAuthStore(); // FIXED: Removed unused verifyOTP, resendOTP from here
 
+  // FIXED: Improved validation with trim() and better error messages
   const validateForm = () => {
-    if (formData.username === "") return toast.error("username is required");
-    if (formData.email === "") return toast.error("email is required");
-    if(!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("invalid email");
-    if (formData.password.length < 6 ) return toast.error("password is required");
-
+    if (formData.username.trim() === "") return toast.error("Username is required");
+    if (formData.email.trim() === "") return toast.error("Email is required");
+    if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email");
+    if (formData.password.length < 6) return toast.error("Password must be at least 6 characters");
     return true;
   };
 
-  const handleSubmit = (event) => {
+  // FIXED: Complete overhaul of handleSubmit to work with OTP flow
+  const handleSubmit = async (event) => {
     event.preventDefault();
     
-    const success = validateForm()
-    if(success === true) signup(formData);
+    const success = validateForm();
+    if (success === true) {
+      try {
+        // Step 1: Signup - this sends OTP to email
+        await signup(formData);
+        
+        // Step 2: Store email and show OTP modal for verification
+        setPendingEmail(formData.email);
+        setShowOTPModal(true);
+        
+        // FIXED: Removed duplicate toast - signup already shows toast
+      } catch (error) {
+        // Error is already handled in the store
+        console.error("Signup error:", error);
+      }
+    }
+  };
+
+  // NEW: Callback for successful OTP verification
+  const handleOTPVerified = () => {
+    setShowOTPModal(false); // Close the modal
+    navigate("/"); // Redirect to home/dashboard
+    toast.success("Welcome! Your account has been verified. Now please log in."); // Welcome message
   };
 
   return (
@@ -64,12 +89,13 @@ const SignUpPage = () => {
                 </div>
                 <input
                   type="text"
-                  className={`input input-bordered w-full pl-10`}
+                  className="input input-bordered w-full pl-10"
                   placeholder="John Doe"
                   value={formData.username}
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
+                  disabled={isSigningUp} // FIXED: Disable during signup
                 />
               </div>
             </div>
@@ -84,12 +110,13 @@ const SignUpPage = () => {
                 </div>
                 <input
                   type="email"
-                  className={`input input-bordered w-full pl-10`}
+                  className="input input-bordered w-full pl-10"
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  disabled={isSigningUp} // FIXED: Disable during signup
                 />
               </div>
             </div>
@@ -104,17 +131,19 @@ const SignUpPage = () => {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
-                  className={`input input-bordered w-full pl-10`}
+                  className="input input-bordered w-full pl-10"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
+                  disabled={isSigningUp} // FIXED: Disable during signup
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isSigningUp} // FIXED: Disable during signup
                 >
                   {showPassword ? (
                     <EyeOff className="size-5 text-base-content/40" />
@@ -133,13 +162,14 @@ const SignUpPage = () => {
               {isSigningUp ? (
                 <>
                   <Loader2 className="size-5 animate-spin" />
-                  Loading...
+                  Creating account...
                 </>
               ) : (
                 "Create Account"
               )}
             </button>
           </form>
+          
           <div className="text-center">
             <p className="text-base-content/60">
               Already have an account?{" "}
@@ -150,9 +180,20 @@ const SignUpPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* FIXED: Fixed typo in subtitle - changed "shere" to "share" */}
       <AuthImagePattern
         title="Join Our community"
-        subtitle="Connect with friends, shere moments, and stay in touch with your loved ones."
+        subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
+      />
+      
+      {/* NEW: OTP Modal component - now handles verification internally */}
+      <OTPModal
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        email={pendingEmail}
+        onVerify={handleOTPVerified}
+        // FIXED: Removed onResend and isVerifying props - modal now uses store directly
       />
     </div>
   );

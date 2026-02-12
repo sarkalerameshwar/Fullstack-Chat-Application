@@ -19,7 +19,12 @@ export const signup = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
 
-    if (existingUser) {
+    if(existingUser && !existingUser.isVerified){
+      await OTP.deleteMany({ email });
+      await User.deleteOne({email });
+    }
+
+    if (existingUser && existingUser.isVerified) {
       return res.status(400).json({
         message: "Email already exists.",
       });
@@ -49,6 +54,35 @@ export const signup = async (req, res) => {
 
   } catch (err) {
     console.log(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const resendOTP = async (req, res) => {
+  try{
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        message: "User with this email does not exist",
+      });
+    }
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Email is already verified",
+      });
+    }
+
+    const otp = generateOTP();
+    await OTP.deleteMany({ email });
+    await OTP.create({ email, otp });
+    await sendEmail(email, "Your OTP Code", `Your OTP code is: ${otp}`);
+    res.status(200).json({
+      message: "OTP resent successfully",
+    });
+  } catch (err) {
+    console.log("error in resendOTP controller", err.message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
