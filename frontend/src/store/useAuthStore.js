@@ -3,7 +3,8 @@ import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
+const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -13,6 +14,8 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   isVerifyingOTP: false,
   isResendingOTP: false,
+  isSendingOTP: false,
+  isResettingPassword: false,
   onlineUsers: [],
   socket: null,
 
@@ -50,14 +53,14 @@ export const useAuthStore = create((set, get) => ({
     set({ isVerifyingOTP: true });
     try {
       const res = await axiosInstance.post("/auth/verify-otp", { email, otp });
-      
+
       // After successful OTP verification, set the auth user
       if (res.data.user) {
         set({ authUser: res.data.user });
         get().connectSocket();
         toast.success("Email verified successfully!");
       }
-      
+
       return res.data;
     } catch (error) {
       console.log("Error in verifyOTP:", error);
@@ -95,6 +98,56 @@ export const useAuthStore = create((set, get) => ({
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
       set({ isLoggingIn: false });
+    }
+  },
+
+  // Add these to your useAuthStore
+
+  forgotPassword: async (email) => {
+    set({ isSendingOTP: true });
+    try {
+      const res = await axiosInstance.post("/auth/forgot-password", { email });
+      toast.success(res.data.message || "OTP sent to your email");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send OTP");
+      throw error;
+    } finally {
+      set({ isSendingOTP: false });
+    }
+  },
+
+  verifyResetOTP: async ({ email, otp }) => {
+    set({ isVerifyingOTP: true });
+    try {
+      const res = await axiosInstance.post("/auth/verify-reset-otp", {
+        email,
+        otp,
+      });
+      toast.success(res.data.message || "OTP verified successfully");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Invalid OTP");
+      throw error;
+    } finally {
+      set({ isVerifyingOTP: false });
+    }
+  },
+
+  resetPassword: async ({ email, newPassword }) => {
+    set({ isResettingPassword: true });
+    try {
+      const res = await axiosInstance.post("/auth/reset-password", {
+        email,
+        newPassword,
+      });
+      toast.success(res.data.message || "Password reset successfully");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reset password");
+      throw error;
+    } finally {
+      set({ isResettingPassword: false });
     }
   },
 
@@ -140,7 +193,7 @@ export const useAuthStore = create((set, get) => ({
       set({ onlineUsers: userIds });
     });
   },
-  
+
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
   },

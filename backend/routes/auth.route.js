@@ -1,5 +1,5 @@
 import express from 'express'
-import { login, logout, forgotPassword, resetPassword, resendOTP, signup, updateProfile, authCheck } from '../controllers/auth.controller.js';
+import { login, logout, forgotPassword, resetPassword, resendOTP,resetPasswordOTPVerify, signup, updateProfile, authCheck } from '../controllers/auth.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
 import { verifyOTP } from '../controllers/otp.controller.js';
 
@@ -14,6 +14,8 @@ router.post("/verify-otp", verifyOTP)
 router.post("/resend-otp", resendOTP)
 
 router.post("/forgot-password", forgotPassword);
+
+router.post("/verify-reset-otp", resetPasswordOTPVerify);
 
 router.post("/reset-password", resetPassword);
 

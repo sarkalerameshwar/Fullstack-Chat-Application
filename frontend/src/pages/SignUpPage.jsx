@@ -42,7 +42,6 @@ const SignUpPage = () => {
         setPendingEmail(formData.email);
         setShowOTPModal(true);
         
-        // FIXED: Removed duplicate toast - signup already shows toast
       } catch (error) {
         // Error is already handled in the store
         console.error("Signup error:", error);

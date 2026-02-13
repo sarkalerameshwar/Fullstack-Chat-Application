@@ -3,9 +3,12 @@ import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import ForgotPasswordModal from "../components/ForgotPasswordModel";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -83,6 +86,15 @@ const LoginPage = () => {
                   )}
                 </button>
               </div>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm link link-primary"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary w-full" disabled={isLoggingIn}>
@@ -113,7 +125,14 @@ const LoginPage = () => {
         title={"Welcome back!"}
         subtitle={"Sign in to continue your conversations and catch up with your messages."}
       />
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
+    
   );
 };
 export default LoginPage;

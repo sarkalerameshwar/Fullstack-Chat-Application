@@ -8,24 +8,20 @@ import SignUpPage from "./pages/SignUpPage";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { usersThemeStore } from "./store/usersThemeStore";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
-  const theme = usersThemeStore((state) => state.theme);
-  const rootRef = useRef(null);
+  const { theme } = usersThemeStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (rootRef.current) {
-      rootRef.current.setAttribute("data-theme", theme);
-      console.log("Theme applied:", theme);
-    }
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   console.log(authUser);
@@ -37,7 +33,7 @@ function App() {
       </div>
     );
   return (
-    <div ref={rootRef}>
+    <div className="min-h-screen bg-base-200">
       <Navbar />
 
       <Routes>

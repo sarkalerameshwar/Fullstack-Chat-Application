@@ -105,7 +105,6 @@ const OTPModal = ({ isOpen, onClose, email, onVerify }) => {
       setTimeLeft(120);
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
-      toast.success("New verification code sent!");
       inputRefs.current[0]?.focus();
     } catch (error) {
       console.error("Resend OTP failed:", error);

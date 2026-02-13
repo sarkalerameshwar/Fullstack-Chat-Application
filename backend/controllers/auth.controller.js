@@ -178,9 +178,9 @@ export const forgotPassword = async (req, res) =>{
   }
 }
 
-export const resetPassword = async (req, res) =>{
+export const resetPasswordOTPVerify = async (req, res) =>{
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, otp } = req.body;
     const otpRecord = await OTP.findOne({ email });
 
     if (!otpRecord) {
@@ -197,14 +197,38 @@ export const resetPassword = async (req, res) =>{
       });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    
     await OTP.deleteMany({ email });
 
     res.status(200).json({
-      message: "Password reset successful",
+      message: "OTP verified successfully",
     });
 
+  } catch (err) {
+    console.log("error in resetPasswordOTPVerify controller", err.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const resetPassword = async (req, res) => {
+  try{
+    const { email, newPassword } = req.body;
+
+    if(newPassword.length < 6){
+      return res.status(400).json({
+        message: "Password must be at least 6 characters",
+      });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      { password: hashedPassword },
+      { new: true }
+    );
+    res.status(200).json({
+      message: "Password reset successfully",
+      user: updatedUser,
+    });
   } catch (err) {
     console.log("error in resetPassword controller", err.message);
     res.status(500).json({ message: "Internal server error" });
