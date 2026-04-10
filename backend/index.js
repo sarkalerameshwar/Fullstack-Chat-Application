@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import authRoute from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import searchRoute from "./routes/search.route.js";
+import requestRoute from "./routes/request.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
@@ -26,6 +28,9 @@ app.use(
 
 app.use("/api/auth", authRoute);
 app.use("/api/messages", messageRoutes);
+app.use("/api", searchRoute);
+app.use("/api", requestRoute);
+
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));

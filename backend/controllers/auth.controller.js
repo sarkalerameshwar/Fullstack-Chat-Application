@@ -117,13 +117,15 @@ export const login = async (req, res) => {
       });
     }
 
-    generateToken(user._id, res);
+    const token = generateToken(user._id, res);
 
     res.status(200).json({
+      "meassage": "Login successful",
       _id: user._id,
       username: user.username,
       email: user.email,
       profilePic: user.profile_Pic,
+      token: token,
     });
 
   } catch (err) {
