@@ -85,7 +85,7 @@ export const getFriendRequests = async (req, res) => {
         const friendRequests = await FriendRequest.find({
             receiverId: userId,
             status: "pending"
-        }).populate("senderId", "name email profile_Pic");
+        }).populate("senderId", "username profile_Pic");
         res.json({ friendRequests });
     } catch (error) {
         res.status(500).json({ message: "Error fetching friend requests", error });
@@ -124,18 +124,33 @@ export const getFriendsList = async (req, res) => {
                 { senderId: userId, status: "accepted" },
                 { receiverId: userId, status: "accepted" }
             ]
-        }).populate("senderId receiverId", "name email profile_Pic");
+        }).populate("senderId receiverId", "username profile_Pic");
         
         // Extract friend objects (the other person in each friendship)
-        const friends = friendRequests.map(request => {
-            if (request.senderId._id.toString() === userId.toString()) {
-                return request.receiverId;
-            } else {
-                return request.senderId;
-            }
-        });
+        // and skip malformed/deleted references to avoid runtime crashes.
+        const friends = friendRequests
+            .map((request) => {
+                const sender = request.senderId;
+                const receiver = request.receiverId;
+
+                if (!sender || !receiver) return null;
+
+                if (sender._id?.toString() === userId.toString()) {
+                    return receiver;
+                }
+
+                return sender;
+            })
+            .filter(Boolean);
+
+        // De-duplicate by user id to keep the response stable.
+        const uniqueFriendsMap = new Map();
+        for (const friend of friends) {
+            uniqueFriendsMap.set(friend._id.toString(), friend);
+        }
+        const uniqueFriends = Array.from(uniqueFriendsMap.values());
         
-        res.json({ friends });
+        res.json({ friends: uniqueFriends });
     } catch (error) {
         res.status(500).json({ message: "Error fetching friends list", error });
     }
@@ -157,6 +172,21 @@ export const rejectFriendRequest = async (req, res) => {
         res.json({ message: "Friend request rejected" });
     } catch (error) {
         res.status(500).json({ message: "Error rejecting friend request", error });
+
+    }
+}
+
+export const getSentFriendRequests = async (req, res) => {
+    try{
+        const userId = req.user._id;
+
+        const sentRequests = await FriendRequest.find({
+            senderId: userId,
+            status: "pending"
+        }).populate("receiverId", "username profile_Pic");
+        res.json({ sentRequests });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching sent requests", error });
 
     }
 }

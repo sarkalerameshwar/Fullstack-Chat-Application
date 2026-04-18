@@ -13,14 +13,28 @@ export const useChatStore = create((set, get) => ({
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/users");
-      const mappedUsers = res.data.map(user => ({
-        ...user,
-        profilePic: user.profile_Pic || "",
-      }));
+      const res = await axiosInstance.get("/users/friends-list");
+      const mappedUsers = (res.data?.friends || []).map((user) => {
+        const username =
+          user.username ||
+          user.name ||
+          "Unknown User";
+
+        return {
+          ...user,
+          username,
+          profilePic: user.profilePic || user.profile_Pic || "",
+        };
+      });
+
       set({ users: mappedUsers });
+
+      const { selectedUser } = get();
+      if (selectedUser && !mappedUsers.some((user) => user._id === selectedUser._id)) {
+        set({ selectedUser: null });
+      }
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message || "Failed to load friends list");
     } finally {
       set({ isUsersLoading: false });
     }
@@ -32,7 +46,7 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message || "Failed to load messages");
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -43,7 +57,7 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
       set({ messages: [...messages, res.data] });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message || "Failed to send message");
     }
   },
 

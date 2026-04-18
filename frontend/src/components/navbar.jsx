@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
-import {Link} from 'react-router-dom'
-import { LogOut, MessageSquare, Settings, User } from "lucide-react";
+import { useFriendRequestStore } from "../store/useFriendRequestStore.js";
+import { Link } from 'react-router-dom'
+import { LogOut, MessageSquare, Settings, User, UserCheck, Users } from "lucide-react";
 
 
-const navbar = () => {
+const Navbar = () => {
   const { logout, authUser } = useAuthStore();
+  const { friendRequests, fetchFriendRequests } = useFriendRequestStore();
+
+  // Fetch friend requests when component mounts or authUser changes
+  useEffect(() => {
+    if (authUser) {
+      fetchFriendRequests();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchFriendRequests, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [authUser, fetchFriendRequests]);
   return (
     <header
       className="bg-base-100 border-b border-base-300 fixed w-full top-0 z-40 
@@ -27,6 +39,35 @@ const navbar = () => {
 
           <div className="flex items-center gap-2">
             <Link
+              to={"/invite"}
+              className={`
+              btn btn-sm gap-2 transition-colors
+              `}
+              title="Send & Manage Friend Requests"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Invite</span>
+            </Link>
+
+            <Link
+              to={"/accept"}
+              className={`
+              btn btn-sm gap-2 transition-colors relative
+              `}
+              title="Accept Friend Requests"
+            >
+              <div className="relative">
+                <UserCheck className="w-4 h-4" />
+                {friendRequests && friendRequests.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {friendRequests.length > 9 ? "9+" : friendRequests.length}
+                  </span>
+                )}
+              </div>
+              <span className="hidden sm:inline">Accept</span>
+            </Link>
+
+            <Link
               to={"/settings"}
               className={`
               btn btn-sm gap-2 transition-colors
@@ -36,7 +77,6 @@ const navbar = () => {
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
-
             {authUser && (
               <>
                 <Link to={"/profile"} className={`btn btn-sm gap-2`}>
@@ -57,4 +97,4 @@ const navbar = () => {
   );
 };
 
-export default navbar;
+export default Navbar;

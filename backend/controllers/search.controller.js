@@ -12,10 +12,10 @@ export const searchUsers = async (req, res) => {
         const regex = new RegExp(query, 'i'); // Case-insensitive search
         const users = await User.find({
             $or: [
-                { name: regex },
+                { username: regex },
                 { email: regex }
             ]
-        }).select('name email profile_Pic'); // Select only necessary fields
+        }).select('username email profile_Pic'); // Select only necessary fields
         if(users.length === 0){
             return res.status(404).json({ message: "No users found matching the query" });
         }
