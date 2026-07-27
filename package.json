@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
-    "start": "npm run start --prefix backend "
+    "start": "npm run start --prefix backend",
+    "test": "npm test --prefix backend",
+    "lint": "npm run lint --prefix frontend",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
   },
   "keywords": [],
   "author": "Rameshwar",

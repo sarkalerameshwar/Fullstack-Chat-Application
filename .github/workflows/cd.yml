@@ -1,0 +1,87 @@
+name: Continuous Deployment (CD)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish-docker-images:
+    name: Build & Publish Docker Images to GHCR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase Repository Owner Name
+        id: repo_owner
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      # Build and Push Backend Image
+      - name: Build and Push Backend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/chat-app-backend:latest
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/chat-app-backend:${{ github.sha }}
+
+      # Build and Push Frontend Image
+      - name: Build and Push Frontend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/chat-app-frontend:latest
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/chat-app-frontend:${{ github.sha }}
+
+  trigger-deployment:
+    name: Trigger Remote Cloud Deployment
+    needs: publish-docker-images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Webhook Deploy Hook (If Configured)
+        if: ${{ secrets.DEPLOY_WEBHOOK_URL != '' }}
+        run: |
+          echo "Triggering cloud service deployment webhook..."
+          curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" || echo "Webhook trigger completed."
+
+  create-github-release:
+    name: Draft Release on Version Tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: publish-docker-images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

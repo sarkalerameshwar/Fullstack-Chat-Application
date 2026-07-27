@@ -26,6 +26,15 @@ app.use(
   })
 );
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 app.use("/api/auth", authRoute);
 app.use("/api/messages", messageRoutes);
 app.use("/api", searchRoute);
@@ -40,7 +49,12 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-server.listen(port, (req, res) => {
-  console.log(`Server is running on port ${port}`);
-  connectDB();
-});
+if (process.env.NODE_ENV !== "test") {
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+    connectDB();
+  });
+}
+
+export { app, server };
+

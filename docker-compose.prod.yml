@@ -1,0 +1,44 @@
+services:
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-sarkalerameshwar}/chat-app-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prod_chat_backend
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    networks:
+      - prod_chat_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5001/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-sarkalerameshwar}/chat-app-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: prod_chat_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - prod_chat_network
+
+networks:
+  prod_chat_network:
+    driver: bridge

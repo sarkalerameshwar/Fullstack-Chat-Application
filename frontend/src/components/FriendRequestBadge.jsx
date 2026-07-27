@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useFriendRequestStore } from "../store/useFriendRequestStore";
-import { Users, Bell } from "lucide-react";
+import { Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function FriendRequestBadge() {
   const { friendRequests, fetchFriendRequests } = useFriendRequestStore();
-  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     fetchFriendRequests();
