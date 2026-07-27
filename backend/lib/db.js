@@ -3,12 +3,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const connectDB = async () =>{
+export const connectDB = async () => {
     try {
-        // console.log("DB_URL:", process.env.DB_URL);
-        await mongoose.connect(process.env.DB_URL);
+        const mongoUri = process.env.DB_URL || "mongodb://127.0.0.1:27017/chat_db";
+        await mongoose.connect(mongoUri);
         console.log('connection successful.');
-    }catch(err){
+    } catch (err) {
         console.log(err);
     }
 }
