@@ -25,12 +25,15 @@ services:
       - "5001:5001"
     environment:
       - PORT=5001
-      - NODE_ENV=development
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/chat_db}
+      - DB_URL=${DB_URL:-mongodb://mongodb:27017/chat_db}
       - JWT_SECRET=${JWT_SECRET:-devsecretkey12345}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
     depends_on:
       - mongodb
     networks:

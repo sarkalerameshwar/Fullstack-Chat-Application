@@ -21,7 +21,12 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || [
+      "http://localhost:5173",
+      "http://localhost:8080",
+      "https://chattx.app",
+      "https://www.chattx.app",
+    ],
     credentials: true,
   })
 );
