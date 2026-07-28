@@ -22,6 +22,7 @@ const __dirname = path.resolve();
 
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(securityHeaders);
 app.use(morgan("combined", { stream: { write: (message) => logger.info("http_request", { message: message.trim() }) } }));
 app.use(express.json({ limit: "1mb", type: ["application/json", "application/*+json"] }));

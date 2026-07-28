@@ -12,6 +12,7 @@ services:
       - PORT=5001
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
+      - DB_URL=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - CLIENT_URL=${CLIENT_URL}
@@ -37,6 +38,8 @@ services:
     restart: always
     ports:
       - "${FRONTEND_PORT:-8080}:80"
+    environment:
+      - BACKEND_URL=${BACKEND_URL:-backend:5001}
     depends_on:
       backend:
         condition: service_healthy
