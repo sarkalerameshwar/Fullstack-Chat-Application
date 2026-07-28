@@ -1,8 +1,14 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+
+if (!apiKey || apiKey.startsWith("AIzaSyDummy")) {
+  console.warn("⚠️ Firebase API Key is missing or using placeholder. Please set VITE_FIREBASE_API_KEY in frontend/.env");
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForLocalDev_1234567890",
+  apiKey: apiKey || "AIzaSyDummyKeyForLocalDev_1234567890",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "chattx-app.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "chattx-app",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "chattx-app.appspot.com",
