@@ -13,6 +13,8 @@ import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import InvitePage from "./pages/InvitePage";
 import AcceptPage from "./pages/AcceptPage";
+import { CallProvider } from "./context/CallContext";
+import CallHistoryPage from "./pages/CallHistoryPage";
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -35,6 +37,7 @@ function App() {
       </div>
     );
   return (
+    <CallProvider>
     <div className="min-h-screen bg-base-200">
       <Navbar />
 
@@ -46,10 +49,12 @@ function App() {
         <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
         <Route path="/invite" element={authUser ? <InvitePage /> : <Navigate to="/login" />} />
         <Route path="/accept" element={authUser ? <AcceptPage /> : <Navigate to="/login" />} />
+        <Route path="/calls" element={authUser ? <CallHistoryPage /> : <Navigate to="/login" />} />
       </Routes>
 
       <Toaster />
     </div>
+    </CallProvider>
   );
 }
 

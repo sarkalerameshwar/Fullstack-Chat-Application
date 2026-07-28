@@ -13,7 +13,7 @@ export default function AcceptPage() {
 
     return (
         <div className="h-screen bg-base-200 pt-20">
-          <div className="max-w-5xl mx-auto px-4 pb-6 h-[calc(100vh-5rem)]">
+          <div className="mx-auto max-w-[1500px] px-4 pb-6 h-[calc(100vh-5rem)]">
             <div className="bg-base-100 rounded-xl border border-base-300 shadow-lg h-full overflow-hidden">
               <div className="h-full flex flex-col">
                 <div className="px-6 py-5 border-b border-base-300 bg-base-100">

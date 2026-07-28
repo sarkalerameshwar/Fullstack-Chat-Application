@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -7,7 +8,18 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, selectedUser } = useChatStore();
+  const socket = useAuthStore((state) => state.socket);
+  const typingTimeout = useRef(null);
+
+  useEffect(() => () => clearTimeout(typingTimeout.current), []);
+
+  const notifyTyping = () => {
+    if (!socket?.connected || !selectedUser) return;
+    socket.emit("typing", { to: selectedUser._id });
+    clearTimeout(typingTimeout.current);
+    typingTimeout.current = setTimeout(() => socket.emit("stop-typing", { to: selectedUser._id }), 1200);
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -40,6 +52,8 @@ const MessageInput = () => {
 
       // Clear form
       setText("");
+      clearTimeout(typingTimeout.current);
+      socket?.emit("stop-typing", { to: selectedUser?._id });
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
@@ -76,7 +90,7 @@ const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); notifyTyping(); }}
           />
           <input
             type="file"

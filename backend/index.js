@@ -8,6 +8,11 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
 import { app, server } from "./lib/socket.js";
+import morgan from "morgan";
+import { auditErrors, apiSlowDown, globalLimiter, requestOriginGuard, sanitizeInput, securityHeaders } from "./middlewares/security.middleware.js";
+import logger from "./lib/logger.js";
+import { register } from "./lib/metrics.js";
+import callRoute from "./routes/call.route.js";
 
 import path from "path";
 
@@ -16,8 +21,12 @@ const port = process.env.PORT || 5001;
 const __dirname = path.resolve();
 
 
-app.use(express.json({ limit: "10mb" }));
+app.disable("x-powered-by");
+app.use(securityHeaders);
+app.use(morgan("combined", { stream: { write: (message) => logger.info("http_request", { message: message.trim() }) } }));
+app.use(express.json({ limit: "1mb", type: ["application/json", "application/*+json"] }));
 app.use(cookieParser());
+app.use(requestOriginGuard, sanitizeInput, globalLimiter, apiSlowDown);
 
 app.use(
   cors({
@@ -39,11 +48,13 @@ app.get("/api/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
   });
 });
+app.get("/api/metrics", async (req, res) => { res.set("Content-Type", register.contentType); res.end(await register.metrics()); });
 
 app.use("/api/auth", authRoute);
 app.use("/api/messages", messageRoutes);
 app.use("/api", searchRoute);
 app.use("/api", requestRoute);
+app.use("/api/calls", callRoute);
 
 
 if (process.env.NODE_ENV === "production") {
@@ -60,6 +71,8 @@ if (process.env.NODE_ENV !== "test") {
     connectDB();
   });
 }
+
+app.use(auditErrors);
 
 export { app, server };
 

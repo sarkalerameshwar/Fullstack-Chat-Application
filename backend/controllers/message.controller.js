@@ -22,6 +22,14 @@ export const getMessage = async (req, res) => {
     const { id: userChatId } = req.params;
     const myId = req.user._id;
 
+    const unreadMessages = await Message.find({ senderId: userChatId, recieverId: myId, readAt: null }).select("_id");
+    if (unreadMessages.length) {
+      const readAt = new Date();
+      await Message.updateMany({ _id: { $in: unreadMessages.map((message) => message._id) } }, { readAt });
+      const senderSocketId = getReceiverSocketId(userChatId);
+      if (senderSocketId) io.to(senderSocketId).emit("messages-read", { from: String(myId), messageIds: unreadMessages.map((message) => String(message._id)), readAt });
+    }
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, recieverId: userChatId },
@@ -32,6 +40,23 @@ export const getMessage = async (req, res) => {
   } catch (err) {
     console.log("error in getMessage controller : ", err.message);
     res.status(500).json({ err: "Internal server error" });
+  }
+};
+
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
+    const unreadMessages = await Message.find({ senderId, recieverId: receiverId, readAt: null }).select("_id");
+    if (unreadMessages.length) {
+      const readAt = new Date();
+      await Message.updateMany({ _id: { $in: unreadMessages.map((message) => message._id) } }, { readAt });
+      const senderSocketId = getReceiverSocketId(senderId);
+      if (senderSocketId) io.to(senderSocketId).emit("messages-read", { from: String(receiverId), messageIds: unreadMessages.map((message) => String(message._id)), readAt });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: "Unable to mark messages as read" });
   }
 };
 

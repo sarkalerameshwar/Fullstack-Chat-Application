@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { useFriendRequestStore } from "../store/useFriendRequestStore.js";
 import { Link } from 'react-router-dom'
-import { LogOut, MessageSquare, Settings, User, UserCheck, Users } from "lucide-react";
+import { Clock3, LogOut, MessageSquare, Settings, User, UserCheck, Users } from "lucide-react";
 
 
 const Navbar = () => {
@@ -23,7 +23,7 @@ const Navbar = () => {
       className="bg-base-100 border-b border-base-300 fixed w-full top-0 z-40 
     backdrop-blur-lg bg-base-100/80"
     >
-      <div className="container mx-auto px-4 h-16">
+      <div className="mx-auto h-16 max-w-[1500px] px-4">
         <div className="flex items-center justify-between h-full">
           <div className="flex items-center gap-8">
             <Link
@@ -65,6 +65,15 @@ const Navbar = () => {
                 )}
               </div>
               <span className="hidden sm:inline">Accept</span>
+            </Link>
+
+            <Link
+              to={"/calls"}
+              className="btn btn-sm gap-2 transition-colors"
+              title="Call history"
+            >
+              <Clock3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Calls</span>
             </Link>
 
             <Link

@@ -34,8 +34,33 @@ services:
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173,http://localhost:8080}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
     depends_on:
       - mongodb
+    networks:
+      - chat_network
+
+  coturn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    environment:
+      - TURN_SHARED_SECRET=${TURN_SHARED_SECRET}
+      - TURN_REALM=${TURN_REALM:-chattx.app}
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "49160-49200:49160-49200/udp"
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ${TURN_CERTS_DIR:-./certs}:/etc/coturn/certs:ro
+    read_only: true
+    tmpfs:
+      - /var/tmp
+    security_opt:
+      - no-new-privileges:true
     networks:
       - chat_network
 

@@ -7,6 +7,7 @@ export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
   selectedUser: null,
+  typingUserId: null,
   isUsersLoading: false,
   isMessagesLoading: false,
 
@@ -44,7 +45,7 @@ export const useChatStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({ messages: res.data });
+      set((state) => ({ messages: res.data, users: state.users.map((user) => user._id === userId ? { ...user, unreadCount: 0 } : user) }));
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to load messages");
     } finally {
@@ -62,25 +63,34 @@ export const useChatStore = create((set, get) => ({
   },
 
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
 
+    socket.off("newMessage");
     socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
+      const selectedUser = get().selectedUser;
+      const senderId = String(newMessage.senderId);
+      const isOpenConversation = String(selectedUser?._id) === senderId;
+      set((state) => ({
+        messages: isOpenConversation ? [...state.messages, newMessage] : state.messages,
+        users: state.users.map((user) => user._id === senderId ? { ...user, unreadCount: isOpenConversation ? 0 : (user.unreadCount || 0) + 1 } : user),
+      }));
+      if (isOpenConversation) axiosInstance.post(`/messages/${senderId}/read`).catch(() => {});
+    });
 
-      set({
-        messages: [...get().messages, newMessage],
-      });
+    socket.off("messages-read");
+    socket.on("messages-read", ({ messageIds, readAt }) => {
+      const ids = new Set(messageIds);
+      set((state) => ({ messages: state.messages.map((message) => ids.has(String(message._id)) ? { ...message, readAt } : message) }));
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    socket?.off("newMessage");
+    socket?.off("messages-read");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setTypingUserId: (typingUserId) => set({ typingUserId }),
 }));

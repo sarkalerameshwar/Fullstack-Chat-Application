@@ -18,6 +18,7 @@ export const useAuthStore = create((set, get) => ({
   isResettingPassword: false,
   onlineUsers: [],
   socket: null,
+  socketConnected: false,
 
   checkAuth: async () => {
     try {
@@ -178,23 +179,34 @@ export const useAuthStore = create((set, get) => ({
 
   connectSocket: () => {
     const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    if (!authUser || get().socket) return;
 
     const socket = io(BASE_URL, {
-      query: {
-        userId: authUser._id,
-      },
+      // Socket authentication is performed by the httpOnly `jwt` cookie.
+      // Unlike axios, Socket.IO does not include cross-origin cookies unless
+      // this option is explicitly enabled.
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+      reconnection: true,
     });
-    socket.connect();
 
     set({ socket: socket });
 
+    socket.on("connect", () => set({ socketConnected: true }));
+    socket.on("disconnect", () => set({ socketConnected: false, onlineUsers: [] }));
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection failed:", error.message);
+      set({ socketConnected: false });
+    });
+
     socket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
+      set({ onlineUsers: userIds.map(String) });
     });
   },
 
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const socket = get().socket;
+    if (socket) socket.disconnect();
+    set({ socket: null, socketConnected: false, onlineUsers: [] });
   },
 }));

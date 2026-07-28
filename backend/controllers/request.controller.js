@@ -1,5 +1,6 @@
 import User from '../models/user.model.js';
 import FriendRequest from '../models/friend.request.model.js';
+import Message from '../models/message.model.js';
 
 
 export const sendFriendRequest = async (req, res) => {
@@ -149,8 +150,17 @@ export const getFriendsList = async (req, res) => {
             uniqueFriendsMap.set(friend._id.toString(), friend);
         }
         const uniqueFriends = Array.from(uniqueFriendsMap.values());
+        const unreadCounts = await Message.aggregate([
+            { $match: { recieverId: userId, readAt: null } },
+            { $group: { _id: "$senderId", count: { $sum: 1 } } },
+        ]);
+        const unreadBySender = new Map(unreadCounts.map(({ _id, count }) => [_id.toString(), count]));
+        const friendsWithUnreadCounts = uniqueFriends.map((friend) => ({
+            ...friend.toObject(),
+            unreadCount: unreadBySender.get(friend._id.toString()) || 0,
+        }));
         
-        res.json({ friends: uniqueFriends });
+        res.json({ friends: friendsWithUnreadCounts });
     } catch (error) {
         res.status(500).json({ message: "Error fetching friends list", error });
     }

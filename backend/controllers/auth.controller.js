@@ -1,4 +1,5 @@
-import { generateToken } from "../lib/utils.js";
+import { generateToken, hashToken } from "../lib/utils.js";
+import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
@@ -7,7 +8,8 @@ import OTP from "../models/otp.model.js";
 import { sendEmail } from "../lib/email.service.js";
 
 export const signup = async (req, res) => {
-  const { username, email, password } = req.body;
+    const { username, email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
   try {
 
@@ -17,7 +19,7 @@ export const signup = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if(existingUser && !existingUser.isVerified){
       await OTP.deleteMany({ email });
@@ -34,7 +36,7 @@ export const signup = async (req, res) => {
 
     const newUser = await User.create({
       username,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       isVerified: false,
     });
@@ -92,18 +94,13 @@ export const login = async (req, res) => {
 
   try {
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
-    }
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    if (user.lockUntil && user.lockUntil > new Date()) return res.status(429).json({ message: "Invalid credentials" });
 
     if (!user.isVerified) {
-      return res.status(400).json({
-        message: "Please verify your email before logging in",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isPasswordCorrect = await bcrypt.compare(
@@ -112,20 +109,23 @@ export const login = async (req, res) => {
     );
 
     if (!isPasswordCorrect) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
+      user.failedLoginAttempts += 1;
+      if (user.failedLoginAttempts >= 5) { user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); user.failedLoginAttempts = 0; }
+      await user.save();
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = generateToken(user._id, res);
+    user.failedLoginAttempts = 0; user.lockUntil = undefined;
+    const { refreshToken } = generateToken(user._id, res);
+    user.refreshTokenHash = hashToken(refreshToken);
+    await user.save();
 
     res.status(200).json({
-      "meassage": "Login successful",
+      "message": "Login successful",
       _id: user._id,
       username: user.username,
       email: user.email,
       profilePic: user.profile_Pic,
-      token: token,
     });
 
   } catch (err) {
@@ -136,7 +136,9 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0, httpOnly: true });
+    if (req.user) { req.user.refreshTokenHash = undefined; await req.user.save(); }
+    res.clearCookie("jwt");
+    res.clearCookie("refresh_token", { path: "/api/auth" });
 
     res.status(200).json({
       message: "Logged out successfully",
@@ -149,6 +151,20 @@ export const logout = async (req, res) => {
       message: "Internal server error",
     });
   }
+};
+
+export const refresh = async (req, res) => {
+  try {
+    const token = req.cookies.refresh_token;
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    if (payload.type !== "refresh") throw new Error("Invalid refresh token");
+    const user = await User.findById(payload.userId);
+    if (!user || user.refreshTokenHash !== hashToken(token)) throw new Error("Refresh token replayed");
+    const { refreshToken } = generateToken(user._id, res);
+    user.refreshTokenHash = hashToken(refreshToken);
+    await user.save();
+    res.json({ message: "Session refreshed" });
+  } catch { res.status(401).json({ message: "Session expired" }); }
 };
 
 export const forgotPassword = async (req, res) =>{

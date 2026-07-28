@@ -11,6 +11,7 @@ export const protectRoute = async (req, res, next) =>{
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.type !== "access") return res.status(401).json({ message: "Invalid token" });
 
         const user = await User.findById(decoded.userId).select("-password");
 
@@ -22,7 +23,8 @@ export const protectRoute = async (req, res, next) =>{
 
         next();
     }catch(err){
-        console.log(err.message);
-        res.status(500).json({messaage : "Internal server error"});
+        res.status(401).json({message : "Unauthorized"});
     }
 }
+
+export const requireRole = (...roles) => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ message: "Insufficient permissions" });

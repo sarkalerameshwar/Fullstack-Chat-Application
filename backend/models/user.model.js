@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: Date,
+    refreshTokenHash: String,
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -35,6 +39,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
 
 const User = mongoose.model("User", userSchema);
 export default User;

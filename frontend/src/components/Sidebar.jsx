@@ -5,14 +5,19 @@ import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { Users } from "lucide-react";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, subscribeToMessages, unsubscribeFromMessages } = useChatStore();
 
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, socket } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     getUsers();
   }, [getUsers]);
+
+  useEffect(() => {
+    subscribeToMessages();
+    return () => unsubscribeFromMessages();
+  }, [socket, subscribeToMessages, unsubscribeFromMessages]);
 
   // Filter users by search query
   const filteredUsers = users.filter((user) =>
@@ -20,8 +25,8 @@ const Sidebar = () => {
   );
 
   // Separate online and offline users
-  const onlineUsersList = filteredUsers.filter((user) => onlineUsers.includes(user._id));
-  const offlineUsersList = filteredUsers.filter((user) => !onlineUsers.includes(user._id));
+  const onlineUsersList = filteredUsers.filter((user) => onlineUsers.includes(String(user._id)));
+  const offlineUsersList = filteredUsers.filter((user) => !onlineUsers.includes(String(user._id)));
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -74,9 +79,9 @@ const Sidebar = () => {
                 </div>
 
                 {/* User info - only visible on larger screens */}
-                <div className="hidden lg:block text-left min-w-0">
-                  <div className="font-medium truncate">{user.username}</div>
-                  <div className="text-sm text-zinc-400">Online</div>
+                <div className="hidden lg:flex flex-1 items-center justify-between gap-2 text-left min-w-0">
+                  <div className="min-w-0"><div className="font-medium truncate">{user.username}</div><div className="text-sm text-success">Online</div></div>
+                  {user.unreadCount > 0 && <span className="badge badge-primary badge-sm shrink-0">{user.unreadCount > 99 ? "99+" : user.unreadCount}</span>}
                 </div>
               </button>
             ))}
@@ -104,9 +109,9 @@ const Sidebar = () => {
               </div>
 
               {/* User info - only visible on larger screens */}
-              <div className="hidden lg:block text-left min-w-0">
-                <div className="font-medium truncate">{user.username}</div>
-                <div className="text-sm text-zinc-400">Offline</div>
+              <div className="hidden lg:flex flex-1 items-center justify-between gap-2 text-left min-w-0">
+                <div className="min-w-0"><div className="font-medium truncate">{user.username}</div><div className="text-sm text-zinc-400">Offline</div></div>
+                {user.unreadCount > 0 && <span className="badge badge-primary badge-sm shrink-0">{user.unreadCount > 99 ? "99+" : user.unreadCount}</span>}
               </div>
             </button>
           ))
