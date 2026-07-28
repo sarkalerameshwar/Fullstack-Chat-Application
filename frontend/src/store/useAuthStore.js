@@ -26,7 +26,9 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
-      console.log("Error in checkAuth:", error);
+      if (error.response?.status !== 401) {
+        console.log("Error in checkAuth:", error);
+      }
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
@@ -37,8 +39,6 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      // Don't set authUser yet - wait for OTP verification
-      // The backend should return success message without setting user as authenticated
       toast.success("Verification code sent to your email");
       return res.data;
     } catch (error) {
@@ -49,13 +49,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Verify OTP method
   verifyOTP: async ({ email, otp }) => {
     set({ isVerifyingOTP: true });
     try {
       const res = await axiosInstance.post("/auth/verify-otp", { email, otp });
 
-      // After successful OTP verification, set the auth user
       if (res.data.user) {
         set({ authUser: res.data.user });
         get().connectSocket();
@@ -72,7 +70,6 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Resend OTP method
   resendOTP: async (email) => {
     set({ isResendingOTP: true });
     try {
@@ -102,7 +99,34 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Add these to your useAuthStore
+  loginWithGoogle: async () => {
+    set({ isLoggingIn: true });
+    try {
+      const { signInWithPopup } = await import("firebase/auth");
+      const { auth, googleProvider } = await import("../lib/firebase.js");
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const payload = {
+        email: user.email,
+        name: user.displayName || user.email?.split("@")[0],
+        picture: user.photoURL || "",
+        uid: user.uid,
+      };
+
+      const res = await axiosInstance.post("/auth/google", payload);
+      set({ authUser: res.data });
+      toast.success("Signed in with Google successfully!");
+      get().connectSocket();
+    } catch (error) {
+      console.log("Error in loginWithGoogle:", error);
+      if (error.code !== "auth/popup-closed-by-user") {
+        toast.error(error.response?.data?.message || error.message || "Google sign in failed");
+      }
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
 
   forgotPassword: async (email) => {
     set({ isSendingOTP: true });
@@ -182,9 +206,6 @@ export const useAuthStore = create((set, get) => ({
     if (!authUser || get().socket) return;
 
     const socket = io(BASE_URL, {
-      // Socket authentication is performed by the httpOnly `jwt` cookie.
-      // Unlike axios, Socket.IO does not include cross-origin cookies unless
-      // this option is explicitly enabled.
       withCredentials: true,
       transports: ["websocket", "polling"],
       reconnection: true,

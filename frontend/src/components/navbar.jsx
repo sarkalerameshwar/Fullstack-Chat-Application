@@ -1,9 +1,8 @@
 import React, { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { useFriendRequestStore } from "../store/useFriendRequestStore.js";
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import { Clock3, LogOut, MessageSquare, Settings, User, UserCheck, Users } from "lucide-react";
-
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
@@ -18,6 +17,7 @@ const Navbar = () => {
       return () => clearInterval(interval);
     }
   }, [authUser, fetchFriendRequests]);
+
   return (
     <header
       className="bg-base-100 border-b border-base-300 fixed w-full top-0 z-40 
@@ -38,62 +38,60 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              to={"/invite"}
-              className={`
-              btn btn-sm gap-2 transition-colors
-              `}
-              title="Send & Manage Friend Requests"
-            >
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Invite</span>
-            </Link>
+            {authUser && (
+              <>
+                <Link
+                  to={"/invite"}
+                  className="btn btn-sm gap-2 transition-colors"
+                  title="Send & Manage Friend Requests"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Invite</span>
+                </Link>
 
-            <Link
-              to={"/accept"}
-              className={`
-              btn btn-sm gap-2 transition-colors relative
-              `}
-              title="Accept Friend Requests"
-            >
-              <div className="relative">
-                <UserCheck className="w-4 h-4" />
-                {friendRequests && friendRequests.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {friendRequests.length > 9 ? "9+" : friendRequests.length}
-                  </span>
-                )}
-              </div>
-              <span className="hidden sm:inline">Accept</span>
-            </Link>
+                <Link
+                  to={"/accept"}
+                  className="btn btn-sm gap-2 transition-colors relative"
+                  title="Accept Friend Requests"
+                >
+                  <div className="relative">
+                    <UserCheck className="w-4 h-4" />
+                    {friendRequests && friendRequests.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {friendRequests.length > 9 ? "9+" : friendRequests.length}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden sm:inline">Accept</span>
+                </Link>
 
-            <Link
-              to={"/calls"}
-              className="btn btn-sm gap-2 transition-colors"
-              title="Call history"
-            >
-              <Clock3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Calls</span>
-            </Link>
+                <Link
+                  to={"/calls"}
+                  className="btn btn-sm gap-2 transition-colors"
+                  title="Call history"
+                >
+                  <Clock3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Calls</span>
+                </Link>
+              </>
+            )}
 
             <Link
               to={"/settings"}
-              className={`
-              btn btn-sm gap-2 transition-colors
-              
-              `}
+              className="btn btn-sm gap-2 transition-colors"
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
+
             {authUser && (
               <>
-                <Link to={"/profile"} className={`btn btn-sm gap-2`}>
+                <Link to={"/profile"} className="btn btn-sm gap-2">
                   <User className="size-5" />
                   <span className="hidden sm:inline">Profile</span>
                 </Link>
 
-                <button className="flex gap-2 items-center" onClick={logout}>
+                <button className="flex gap-2 items-center btn btn-sm btn-ghost" onClick={logout}>
                   <LogOut className="size-5" />
                   <span className="hidden sm:inline">Logout</span>
                 </button>

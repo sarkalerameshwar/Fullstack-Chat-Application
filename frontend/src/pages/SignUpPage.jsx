@@ -1,25 +1,24 @@
 import { User, Mail, Lock, Eye, EyeOff, Loader2, MessageSquare } from "lucide-react";
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // FIXED: Added useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
-import OTPModal from "../components/OTPModal"; // FIXED: Import the OTP modal
+import OTPModal from "../components/OTPModal";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [showOTPModal, setShowOTPModal] = useState(false); // NEW: State for OTP modal visibility
-  const [pendingEmail, setPendingEmail] = useState(""); // NEW: Store email for OTP verification
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
   });
 
-  const navigate = useNavigate(); // NEW: For navigation after verification
-  const { signup, isSigningUp } = useAuthStore(); // FIXED: Removed unused verifyOTP, resendOTP from here
+  const navigate = useNavigate();
+  const { signup, loginWithGoogle, isSigningUp, isLoggingIn } = useAuthStore();
 
-  // FIXED: Improved validation with trim() and better error messages
   const validateForm = () => {
     if (formData.username.trim() === "") return toast.error("Username is required");
     if (formData.email.trim() === "") return toast.error("Email is required");
@@ -28,41 +27,34 @@ const SignUpPage = () => {
     return true;
   };
 
-  // FIXED: Complete overhaul of handleSubmit to work with OTP flow
   const handleSubmit = async (event) => {
     event.preventDefault();
     
     const success = validateForm();
     if (success === true) {
       try {
-        // Step 1: Signup - this sends OTP to email
         await signup(formData);
-        
-        // Step 2: Store email and show OTP modal for verification
         setPendingEmail(formData.email);
         setShowOTPModal(true);
-        
       } catch (error) {
-        // Error is already handled in the store
         console.error("Signup error:", error);
       }
     }
   };
 
-  // NEW: Callback for successful OTP verification
   const handleOTPVerified = () => {
-    setShowOTPModal(false); // Close the modal
-    navigate("/"); // Redirect to home/dashboard
-    toast.success("Welcome! Your account has been verified. Now please log in."); // Welcome message
+    setShowOTPModal(false);
+    navigate("/");
+    toast.success("Welcome! Your account has been verified. Now please log in.");
   };
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* left side */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-6">
           {/* LOGO */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="flex flex-col items-center gap-2 group">
               <div
                 className="size-12 rounded-xl bg-primary/10 flex items-center justify-center 
@@ -77,7 +69,37 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google Sign-in Button */}
+          <button
+            type="button"
+            onClick={loginWithGoogle}
+            disabled={isLoggingIn || isSigningUp}
+            className="btn btn-outline w-full flex items-center justify-center gap-3 border-base-300 hover:bg-base-200"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="divider text-xs text-base-content/40 uppercase">OR</div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Full Name</span>
@@ -94,7 +116,7 @@ const SignUpPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
-                  disabled={isSigningUp} // FIXED: Disable during signup
+                  disabled={isSigningUp}
                 />
               </div>
             </div>
@@ -115,7 +137,7 @@ const SignUpPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  disabled={isSigningUp} // FIXED: Disable during signup
+                  disabled={isSigningUp}
                 />
               </div>
             </div>
@@ -136,13 +158,13 @@ const SignUpPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  disabled={isSigningUp} // FIXED: Disable during signup
+                  disabled={isSigningUp}
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isSigningUp} // FIXED: Disable during signup
+                  disabled={isSigningUp}
                 >
                   {showPassword ? (
                     <EyeOff className="size-5 text-base-content/40" />
@@ -180,19 +202,16 @@ const SignUpPage = () => {
         </div>
       </div>
       
-      {/* FIXED: Fixed typo in subtitle - changed "shere" to "share" */}
       <AuthImagePattern
         title="Join Our community"
         subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
       />
       
-      {/* NEW: OTP Modal component - now handles verification internally */}
       <OTPModal
         isOpen={showOTPModal}
         onClose={() => setShowOTPModal(false)}
         email={pendingEmail}
         onVerify={handleOTPVerified}
-        // FIXED: Removed onResend and isVerifying props - modal now uses store directly
       />
     </div>
   );

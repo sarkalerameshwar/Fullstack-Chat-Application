@@ -2,6 +2,7 @@ import { generateToken, hashToken } from "../lib/utils.js";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import cloudinary from "../lib/cloudinary.js";
 import { generateOTP } from "./otp.controller.js";
 import OTP from "../models/otp.model.js";
@@ -281,6 +282,49 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({
       message: "Internal server error",
     });
+  }
+};
+
+export const googleLogin = async (req, res) => {
+  const { email, name, picture } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ message: "Email is required for Google authentication" });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      const randomPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+      user = await User.create({
+        username: name || normalizedEmail.split("@")[0],
+        email: normalizedEmail,
+        password: randomPassword,
+        profile_Pic: picture || "",
+        isVerified: true,
+      });
+    } else if (!user.isVerified) {
+      user.isVerified = true;
+      if (picture && !user.profile_Pic) user.profile_Pic = picture;
+      await user.save();
+    }
+
+    const { refreshToken } = generateToken(user._id, res);
+    user.refreshTokenHash = hashToken(refreshToken);
+    await user.save();
+
+    res.status(200).json({
+      message: "Google login successful",
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      profilePic: user.profile_Pic,
+    });
+  } catch (err) {
+    console.log("error in googleLogin controller", err.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
