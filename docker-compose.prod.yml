@@ -8,14 +8,16 @@ services:
     restart: always
     ports:
       - "5001:5001"
+    env_file:
+      - .env
     environment:
       - PORT=5001
       - NODE_ENV=production
-      - MONGODB_URI=${MONGODB_URI}
-      - DB_URL=${MONGODB_URI}
+      - DB_URL=${DB_URL:-${MONGODB_URI}}
+      - MONGODB_URI=${MONGODB_URI:-${DB_URL}}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - CLIENT_URL=${CLIENT_URL}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-${JWT_SECRET}}
+      - CLIENT_URL=${CLIENT_URL:-https://chattx.app,https://www.chattx.app}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
