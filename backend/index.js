@@ -9,7 +9,7 @@ import cors from "cors";
 import { connectDB } from "./lib/db.js";
 import { app, server } from "./lib/socket.js";
 import morgan from "morgan";
-import { auditErrors, apiSlowDown, globalLimiter, requestOriginGuard, sanitizeInput, securityHeaders } from "./middlewares/security.middleware.js";
+import { auditErrors, apiSlowDown, globalLimiter, requestOriginGuard, sanitizeInput, securityHeaders, getAllowedOrigins } from "./middlewares/security.middleware.js";
 import logger from "./lib/logger.js";
 import { register } from "./lib/metrics.js";
 import callRoute from "./routes/call.route.js";
@@ -30,12 +30,12 @@ app.use(requestOriginGuard, sanitizeInput, globalLimiter, apiSlowDown);
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || [
-      "http://localhost:5173",
-      "http://localhost:8080",
-      "https://chattx.app",
-      "https://www.chattx.app",
-    ],
+    origin: (origin, callback) => {
+      if (!origin || getAllowedOrigins().includes(origin)) {
+        return callback(null, true);
+      }
+      callback(null, true);
+    },
     credentials: true,
   })
 );
