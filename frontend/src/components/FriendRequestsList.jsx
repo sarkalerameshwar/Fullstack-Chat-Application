@@ -6,7 +6,7 @@ export default function FriendRequestsList() {
   const {
     friendRequests,
     isLoading,
-    isRespondingToRequest,
+    pendingRequestAction,
     fetchFriendRequests,
     acceptFriendRequest,
     rejectFriendRequest,
@@ -38,7 +38,17 @@ export default function FriendRequestsList() {
         Friend Requests ({friendRequests.length})
       </h3>
       <div className="space-y-3">
-        {friendRequests.map((request) => (
+        {friendRequests.map((request) => {
+          const senderId = request.senderId?._id;
+          const isAccepting =
+            pendingRequestAction?.senderId === senderId &&
+            pendingRequestAction?.action === "accept";
+          const isRejecting =
+            pendingRequestAction?.senderId === senderId &&
+            pendingRequestAction?.action === "reject";
+          const isBusy = isAccepting || isRejecting;
+
+          return (
           <div
             key={request._id}
             className="flex items-center justify-between gap-3 p-4 rounded-xl border border-base-300 bg-base-100"
@@ -64,11 +74,11 @@ export default function FriendRequestsList() {
 
             <div className="ml-4 flex gap-2">
               <button
-                onClick={() => acceptFriendRequest(request.senderId._id)}
-                disabled={isRespondingToRequest}
+                onClick={() => acceptFriendRequest(senderId)}
+                disabled={isBusy}
                 className="btn btn-sm btn-success"
               >
-                {isRespondingToRequest ? (
+                {isAccepting ? (
                   <Loader className="h-4 w-4 animate-spin" />
                 ) : (
                   <span className="flex items-center gap-1.5">
@@ -78,11 +88,11 @@ export default function FriendRequestsList() {
                 )}
               </button>
               <button
-                onClick={() => rejectFriendRequest(request.senderId._id)}
-                disabled={isRespondingToRequest}
+                onClick={() => rejectFriendRequest(senderId)}
+                disabled={isBusy}
                 className="btn btn-sm btn-error"
               >
-                {isRespondingToRequest ? (
+                {isRejecting ? (
                   <Loader className="h-4 w-4 animate-spin" />
                 ) : (
                   <span className="flex items-center gap-1.5">
@@ -93,7 +103,8 @@ export default function FriendRequestsList() {
               </button>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

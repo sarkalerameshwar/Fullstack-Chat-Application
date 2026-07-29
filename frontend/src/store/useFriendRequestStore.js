@@ -12,7 +12,7 @@ export const useFriendRequestStore = create((set, get) => ({
   isSearching: false,
   isSendingRequest: false,
   isLoading: false,
-  isRespondingToRequest: false,
+  pendingRequestAction: null,
 
   searchUsers: async (query) => {
     if (!query?.trim()) {
@@ -113,7 +113,7 @@ export const useFriendRequestStore = create((set, get) => ({
   acceptFriendRequest: async (senderId) => {
     if (!senderId) return;
 
-    set({ isRespondingToRequest: true });
+    set({ pendingRequestAction: { senderId, action: "accept" } });
     try {
       const res = await axiosInstance.post(
         `/users/${senderId}/accept-friend-request`,
@@ -132,14 +132,14 @@ export const useFriendRequestStore = create((set, get) => ({
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to accept request");
     } finally {
-      set({ isRespondingToRequest: false });
+      set({ pendingRequestAction: null });
     }
   },
 
   rejectFriendRequest: async (senderId) => {
     if (!senderId) return;
 
-    set({ isRespondingToRequest: true });
+    set({ pendingRequestAction: { senderId, action: "reject" } });
     try {
       const res = await axiosInstance.post(
         `/users/${senderId}/reject-friend-request`,
@@ -158,7 +158,7 @@ export const useFriendRequestStore = create((set, get) => ({
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to reject request");
     } finally {
-      set({ isRespondingToRequest: false });
+      set({ pendingRequestAction: null });
     }
   },
 

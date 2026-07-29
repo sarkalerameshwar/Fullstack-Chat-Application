@@ -41,7 +41,7 @@ const MessageInput = () => {
   };
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
     try {
@@ -50,7 +50,6 @@ const MessageInput = () => {
         image: imagePreview,
       });
 
-      // Clear form
       setText("");
       clearTimeout(typingTimeout.current);
       socket?.emit("stop-typing", { to: selectedUser?._id });
@@ -58,6 +57,13 @@ const MessageInput = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
     }
   };
 
@@ -83,14 +89,18 @@ const MessageInput = () => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2">
-          <input
-            type="text"
-            className="w-full input input-bordered rounded-lg input-sm sm:input-md"
+      <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+        <div className="flex min-w-0 flex-1 items-end gap-2">
+          <textarea
+            rows={1}
+            className="textarea textarea-bordered w-full min-h-[2.5rem] max-h-32 resize-none rounded-lg py-2 text-sm sm:text-base"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => { setText(e.target.value); notifyTyping(); }}
+            onChange={(e) => {
+              setText(e.target.value);
+              notifyTyping();
+            }}
+            onKeyDown={handleKeyDown}
           />
           <input
             type="file"
@@ -102,16 +112,18 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle
-                     ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+            className={`btn btn-circle shrink-0 ${
+              imagePreview ? "text-emerald-500" : "text-zinc-400"
+            }`}
             onClick={() => fileInputRef.current?.click()}
+            aria-label="Upload image"
           >
             <Image size={20} />
           </button>
         </div>
         <button
           type="submit"
-          className="btn btn-sm btn-circle"
+          className="btn btn-sm btn-circle shrink-0"
           disabled={!text.trim() && !imagePreview}
         >
           <Send size={22} />

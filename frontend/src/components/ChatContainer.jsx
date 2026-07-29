@@ -89,7 +89,7 @@ const ChatContainer = () => {
                   onClick={() => setFullImage(message.image)}
                 />
               )}
-              {message.text && <p>{message.text}</p>}
+              {message.text && <p className="whitespace-pre-wrap break-words">{message.text}</p>}
               {message.senderId === authUser._id && <span className="mt-1 self-end text-base-content/55" title={message.readAt ? "Read" : "Sent"}>{message.readAt ? <CheckCheck className="size-3.5 text-info" /> : <Check className="size-3.5" />}</span>}
             </div>
           </div>

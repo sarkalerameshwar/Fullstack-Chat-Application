@@ -1,14 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, subscribeToMessages, unsubscribeFromMessages } = useChatStore();
+  const {
+    getUsers,
+    users,
+    selectedUser,
+    setSelectedUser,
+    isUsersLoading,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+    isChatSearchOpen,
+    chatSearchQuery,
+    setChatSearchQuery,
+    closeChatSearch,
+  } = useChatStore();
 
   const { onlineUsers, socket } = useAuthStore();
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     getUsers();
@@ -19,107 +31,105 @@ const Sidebar = () => {
     return () => unsubscribeFromMessages();
   }, [socket, subscribeToMessages, unsubscribeFromMessages]);
 
-  // Filter users by search query
+  useEffect(() => {
+    if (isChatSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isChatSearchOpen]);
+
   const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    user.username.toLowerCase().includes(chatSearchQuery.toLowerCase())
   );
 
-  // Separate online and offline users
-  const onlineUsersList = filteredUsers.filter((user) => onlineUsers.includes(String(user._id)));
-  const offlineUsersList = filteredUsers.filter((user) => !onlineUsers.includes(String(user._id)));
+  const onlineUsersList = filteredUsers.filter((user) =>
+    onlineUsers.includes(String(user._id))
+  );
+  const offlineUsersList = filteredUsers.filter(
+    (user) => !onlineUsers.includes(String(user._id))
+  );
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
-  return (
-    <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
-      <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center gap-2">
-          <Users className="size-6" />
-          <span className="font-medium hidden lg:block">Contacts</span>
-        </div>
-        {/* Search input */}
-        <div className="mt-3 hidden lg:block">
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input input-bordered input-sm w-full"
-          />
-        </div>
-        {/* Online user count */}
-        <div className="mt-3 hidden lg:flex items-center gap-2">
-          <span className="text-sm font-semibold">Online Users ({onlineUsersList.length})</span>
-        </div>
+  const renderUser = (user, isOnline) => (
+    <button
+      key={user._id}
+      onClick={() => setSelectedUser(user)}
+      className={
+        "w-full flex items-center gap-3 px-4 py-3 hover:bg-base-200 transition-colors text-left " +
+        (selectedUser?._id === user._id ? "bg-base-200" : "")
+      }
+    >
+      <div className="relative shrink-0">
+        <img
+          src={user.profilePic || "/avatar.png"}
+          alt={user.name}
+          className="size-12 rounded-full object-cover"
+        />
+        {isOnline && (
+          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-green-500 ring-2 ring-base-100" />
+        )}
       </div>
 
-      <div className="overflow-y-auto w-full py-3">
-        {/* Online users */}
-        {onlineUsersList.length > 0 && (
-          <>
-            {onlineUsersList.map((user) => (
-              <button
-                key={user._id}
-                onClick={() => setSelectedUser(user)}
-                className={
-                  "w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors " +
-                  (selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : "")
-                }
-              >
-                <div className="relative mx-auto lg:mx-0">
-                  <img
-                    src={user.profilePic || "/avatar.png"}
-                    alt={user.name}
-                    className="size-12 object-cover rounded-full"
-                  />
-                  <span
-                    className="absolute bottom-0 right-0 size-3 bg-green-500 
-                    rounded-full ring-2 ring-zinc-900"
-                  />
-                </div>
-
-                {/* User info - only visible on larger screens */}
-                <div className="hidden lg:flex flex-1 items-center justify-between gap-2 text-left min-w-0">
-                  <div className="min-w-0"><div className="font-medium truncate">{user.username}</div><div className="text-sm text-success">Online</div></div>
-                  {user.unreadCount > 0 && <span className="badge badge-primary badge-sm shrink-0">{user.unreadCount > 99 ? "99+" : user.unreadCount}</span>}
-                </div>
-              </button>
-            ))}
-            <hr className="my-2 border-base-300" />
-          </>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium">{user.username}</p>
+          <p className={`truncate text-sm ${isOnline ? "text-success" : "text-base-content/50"}`}>
+            {isOnline ? "Online" : "Tap to chat"}
+          </p>
+        </div>
+        {user.unreadCount > 0 && (
+          <span className="badge badge-primary badge-sm shrink-0">
+            {user.unreadCount > 99 ? "99+" : user.unreadCount}
+          </span>
         )}
+      </div>
+    </button>
+  );
 
-        {/* Offline users */}
-        {offlineUsersList.length > 0 ? (
-          offlineUsersList.map((user) => (
+  return (
+    <aside className="flex h-full w-full flex-col lg:w-80">
+      <div className="shrink-0 border-b border-base-300 bg-base-100 px-4 pb-3 pt-3 lg:py-3">
+        <div className={`${isChatSearchOpen ? "block" : "hidden"} lg:block`}>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-base-content/50" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search or start new chat"
+              value={chatSearchQuery}
+              onChange={(e) => setChatSearchQuery(e.target.value)}
+              className="input input-bordered h-10 w-full rounded-lg pl-10 pr-10 text-sm"
+            />
             <button
-              key={user._id}
-              onClick={() => setSelectedUser(user)}
-              className={
-                "w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors " +
-                (selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : "")
-              }
+              type="button"
+              onClick={closeChatSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle lg:hidden"
+              aria-label="Close search"
             >
-              <div className="relative mx-auto lg:mx-0">
-                <img
-                  src={user.profilePic || "/avatar.png"}
-                  alt={user.name}
-                  className="size-12 object-cover rounded-full"
-                />
-              </div>
-
-              {/* User info - only visible on larger screens */}
-              <div className="hidden lg:flex flex-1 items-center justify-between gap-2 text-left min-w-0">
-                <div className="min-w-0"><div className="font-medium truncate">{user.username}</div><div className="text-sm text-zinc-400">Offline</div></div>
-                {user.unreadCount > 0 && <span className="badge badge-primary badge-sm shrink-0">{user.unreadCount > 99 ? "99+" : user.unreadCount}</span>}
-              </div>
+              <X className="size-4" />
             </button>
-          ))
-        ) : (
-          <div className="text-center text-zinc-500 py-4">No users found</div>
+          </div>
+        </div>
+
+        <p className={`text-xs text-base-content/60 ${isChatSearchOpen ? "mt-2" : "mt-0 lg:mt-2"}`}>
+          {onlineUsersList.length} online
+        </p>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {onlineUsersList.map((user) => renderUser(user, true))}
+        {offlineUsersList.map((user) => renderUser(user, false))}
+
+        {filteredUsers.length === 0 && (
+          <p className="px-4 py-10 text-center text-sm text-base-content/50">
+            {chatSearchQuery
+              ? "No chats found."
+              : "No chats yet. Invite friends to start messaging."}
+          </p>
         )}
       </div>
     </aside>
   );
 };
+
 export default Sidebar;

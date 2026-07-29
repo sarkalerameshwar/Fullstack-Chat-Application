@@ -2,9 +2,19 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+const isPlaceholder =
+  !apiKey ||
+  apiKey.startsWith("AIzaSyDummy") ||
+  apiKey.includes("YOUR_FIREBASE_API_KEY");
 
-if (!apiKey || apiKey.startsWith("AIzaSyDummy")) {
-  console.warn("⚠️ Firebase API Key is missing or using placeholder. Please set VITE_FIREBASE_API_KEY in frontend/.env");
+if (isPlaceholder && import.meta.env.PROD) {
+  console.error(
+    "Firebase is not configured for production. Set VITE_FIREBASE_* build args when building the frontend Docker image."
+  );
+} else if (isPlaceholder) {
+  console.warn(
+    "Firebase API Key is missing or using placeholder. Set VITE_FIREBASE_API_KEY in frontend/.env"
+  );
 }
 
 const firebaseConfig = {

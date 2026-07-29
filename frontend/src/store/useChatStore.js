@@ -10,6 +10,8 @@ export const useChatStore = create((set, get) => ({
   typingUserId: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  isChatSearchOpen: false,
+  chatSearchQuery: "",
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -91,6 +93,10 @@ export const useChatStore = create((set, get) => ({
     socket?.off("messages-read");
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) =>
+    set({ selectedUser, isChatSearchOpen: false, chatSearchQuery: "" }),
   setTypingUserId: (typingUserId) => set({ typingUserId }),
+  setChatSearchOpen: (isChatSearchOpen) => set({ isChatSearchOpen }),
+  setChatSearchQuery: (chatSearchQuery) => set({ chatSearchQuery }),
+  closeChatSearch: () => set({ isChatSearchOpen: false, chatSearchQuery: "" }),
 }));
