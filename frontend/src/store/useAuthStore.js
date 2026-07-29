@@ -100,9 +100,19 @@ export const useAuthStore = create((set, get) => ({
   },
 
   loginWithGoogle: async () => {
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-    if (!apiKey || apiKey.trim() === "" || apiKey.startsWith("AIzaSyDummy") || apiKey.includes("YOUR_FIREBASE_API_KEY")) {
-      toast.error("Please replace YOUR_FIREBASE_API_KEY in frontend/.env with your real Firebase API Key.", { id: "firebase-key-missing", duration: 6000 });
+    const { isFirebaseConfigured, getFirebaseConfigIssues } = await import(
+      "../lib/firebase.js"
+    );
+
+    if (!isFirebaseConfigured()) {
+      const { missing, invalid } = getFirebaseConfigIssues();
+      const fields = [...missing, ...invalid].join(", ");
+      toast.error(
+        fields
+          ? `Firebase config is incomplete (${fields}). Check frontend/.env or production build secrets.`
+          : "Firebase config is incomplete. Check frontend/.env or production build secrets.",
+        { id: "firebase-config-missing", duration: 8000 }
+      );
       return;
     }
 
@@ -128,6 +138,11 @@ export const useAuthStore = create((set, get) => ({
       console.log("Error in loginWithGoogle:", error);
       if (error.code === "auth/api-key-not-valid.-please-pass-a-valid-api-key.") {
         toast.error("Please add your valid Firebase API key in frontend/.env file");
+      } else if (error.code === "auth/configuration-not-found") {
+        toast.error(
+          "Enable Google Sign-In in Firebase Console: Authentication → Sign-in method → Google → Enable. Then add chattx.app to Authorized domains.",
+          { duration: 9000 }
+        );
       } else if (error.code !== "auth/popup-closed-by-user") {
         toast.error(error.response?.data?.message || error.message || "Google sign in failed");
       }

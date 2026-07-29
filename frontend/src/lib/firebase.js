@@ -1,32 +1,70 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-const isPlaceholder =
-  !apiKey ||
-  apiKey.startsWith("AIzaSyDummy") ||
-  apiKey.includes("YOUR_FIREBASE_API_KEY");
+const firebaseEnv = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
 
-if (isPlaceholder && import.meta.env.PROD) {
+const placeholderPatterns = [
+  /^AIzaSyDummy/,
+  /YOUR_FIREBASE_API_KEY/i,
+  /your-app/i,
+  /your-app-id/i,
+  /1234567890:web:abcdef/i,
+];
+
+export function getFirebaseConfigIssues() {
+  const missing = [];
+  const invalid = [];
+
+  for (const [key, value] of Object.entries(firebaseEnv)) {
+    const normalized = String(value || "").trim();
+    if (!normalized) {
+      missing.push(key);
+      continue;
+    }
+    if (placeholderPatterns.some((pattern) => pattern.test(normalized))) {
+      invalid.push(key);
+    }
+  }
+
+  return { missing, invalid };
+}
+
+export function isFirebaseConfigured() {
+  const { missing, invalid } = getFirebaseConfigIssues();
+  return missing.length === 0 && invalid.length === 0;
+}
+
+const { missing, invalid } = getFirebaseConfigIssues();
+
+if (import.meta.env.PROD && (missing.length > 0 || invalid.length > 0)) {
   console.error(
-    "Firebase is not configured for production. Set VITE_FIREBASE_* build args when building the frontend Docker image."
+    "Firebase config is incomplete for production.",
+    { missing, invalid }
   );
-} else if (isPlaceholder) {
+} else if (missing.length > 0 || invalid.length > 0) {
   console.warn(
-    "Firebase API Key is missing or using placeholder. Set VITE_FIREBASE_API_KEY in frontend/.env"
+    "Firebase config is incomplete. Set all VITE_FIREBASE_* values in frontend/.env",
+    { missing, invalid }
   );
 }
 
 const firebaseConfig = {
-  apiKey: apiKey || "AIzaSyDummyKeyForLocalDev_1234567890",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "chattx-app.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "chattx-app",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "chattx-app.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef123456",
+  apiKey: firebaseEnv.apiKey || "",
+  authDomain: firebaseEnv.authDomain || "",
+  projectId: firebaseEnv.projectId || "",
+  storageBucket: firebaseEnv.storageBucket || "",
+  messagingSenderId: firebaseEnv.messagingSenderId || "",
+  appId: firebaseEnv.appId || "",
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
+googleProvider.setCustomParameters({ prompt: "select_account" });
