@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { createElement, useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { useFriendRequestStore } from "../store/useFriendRequestStore.js";
 import { useChatStore } from "../store/useChatStore.js";
@@ -166,10 +166,10 @@ const Navbar = () => {
                 tabIndex={0}
                 className="dropdown-content menu bg-base-100 rounded-box z-50 w-56 p-2 shadow-lg border border-base-300 mt-2"
               >
-                {navLinks.map(({ to, icon: Icon, label, badge }) => (
+                {navLinks.map(({ to, icon, label, badge }) => (
                   <li key={to}>
                     <Link to={to} className="flex items-center gap-3">
-                      <Icon className="w-4 h-4" />
+                      {createElement(icon, { className: "w-4 h-4" })}
                       <span>{label}</span>
                       {badge > 0 && (
                         <span className="badge badge-primary badge-sm ml-auto">
